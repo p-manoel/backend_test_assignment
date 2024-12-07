@@ -9,9 +9,10 @@
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #
-class Car < ApplicationRecord
-  belongs_to :brand
-
-  validates :model, presence: true
-  validates :price, presence: true, numericality: { greater_than: 0 }
+FactoryBot.define do
+  factory :car do
+    model { Faker::Vehicle.model }
+    price { Faker::Number.between(from: 1_000, to: 100_000) }
+    association :brand
+  end
 end

@@ -1,17 +1,16 @@
 # == Schema Information
 #
-# Table name: cars
+# Table name: user_preferred_brands
 #
 #  id         :bigint           not null, primary key
-#  model      :string
+#  user_id    :bigint           not null, indexed
 #  brand_id   :bigint           not null, indexed
-#  price      :integer
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #
-class Car < ApplicationRecord
-  belongs_to :brand
-
-  validates :model, presence: true
-  validates :price, presence: true, numericality: { greater_than: 0 }
+FactoryBot.define do
+  factory :user_preferred_brand do
+    association :user
+    association :brand
+  end
 end

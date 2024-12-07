@@ -7,8 +7,8 @@
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #
-class Brand < ApplicationRecord
-  has_many :cars, dependent: :destroy
-
-  validates :name, presence: true, uniqueness: true
+FactoryBot.define do
+  factory :brand do
+    name { Faker::Vehicle.manufacture }
+  end
 end

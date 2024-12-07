@@ -8,10 +8,9 @@
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
-class User < ApplicationRecord
-  has_many :user_preferred_brands, dependent: :destroy
-  has_many :preferred_brands, through: :user_preferred_brands, source: :brand
-
-  validates :email, presence: true, uniqueness: true
-  validates :preferred_price_range, presence: true
+FactoryBot.define do
+  factory :user do
+    email { Faker::Internet.unique.email }
+    preferred_price_range { (10_000..50_000) }
+  end
 end
