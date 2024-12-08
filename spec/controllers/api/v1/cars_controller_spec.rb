@@ -25,16 +25,16 @@ RSpec.describe Api::V1::CarsController, type: :controller do
 
     let(:rank_scores) do
       {
-        perfect_match_car.id.to_s => 0.95,
-        good_match_car.id.to_s => 0.75,
-        high_rank_car.id.to_s => 0.85,
-        low_rank_car.id.to_s => 0.45
+        perfect_match_car.id => 0.95,
+        good_match_car.id => 0.75,
+        high_rank_car.id => 0.85,
+        low_rank_car.id => 0.45
       }
     end
 
     before do
       allow(RecommendationCacheService).to receive(:get_recommendations)
-        .with(user.id.to_s)
+        .with(user.id)
         .and_return(rank_scores)
     end
 
@@ -44,12 +44,14 @@ RSpec.describe Api::V1::CarsController, type: :controller do
 
         expect(response).to have_http_status(:success)
 
-        json_response = JSON.parse(response.body)
-        cars = json_response['cars']
+        cars = JSON.parse(response.body)
 
         expect(cars[0]).to include(
           'id' => perfect_match_car.id,
-          'brand' => 'Toyota',
+          'brand' => {
+            'id' => toyota.id,
+            'name' => toyota.name
+          },
           'model' => 'Camry',
           'price' => 25_000,
           'label' => 'perfect_match'
@@ -57,7 +59,10 @@ RSpec.describe Api::V1::CarsController, type: :controller do
 
         expect(cars[1]).to include(
           'id' => good_match_car.id,
-          'brand' => 'Toyota',
+          'brand' => {
+            'id' => toyota.id,
+            'name' => toyota.name
+          },
           'model' => 'Land Cruiser',
           'price' => 75_000,
           'label' => 'good_match'
@@ -65,7 +70,10 @@ RSpec.describe Api::V1::CarsController, type: :controller do
 
         expect(cars[2]).to include(
           'id' => high_rank_car.id,
-          'brand' => 'Honda',
+          'brand' => {
+            'id' => honda.id,
+            'name' => honda.name
+          },
           'model' => 'CR-V',
           'price' => 60_000,
           'label' => nil
@@ -73,14 +81,14 @@ RSpec.describe Api::V1::CarsController, type: :controller do
 
         expect(cars[3]).to include(
           'id' => low_rank_car.id,
-          'brand' => 'Honda',
+          'brand' => {
+            'id' => honda.id,
+            'name' => honda.name
+          },
           'model' => 'Civic',
           'price' => 30_000,
           'label' => nil
         )
-
-        expect(json_response['total_count']).to eq(4)
-        expect(json_response['page']).to eq(1)
       end
     end
 
@@ -88,17 +96,17 @@ RSpec.describe Api::V1::CarsController, type: :controller do
       it 'returns only Toyota cars' do
         get :index, params: { user_id: user.id, query: 'toy' }
 
-        json_response = JSON.parse(response.body)
-        expect(json_response['cars'].size).to eq(2)
-        expect(json_response['cars'].map { |c| c['brand'] }).to all(eq('Toyota'))
+        cars = JSON.parse(response.body)
+        expect(cars.size).to eq(2)
+        expect(cars.map { |c| c['brand'] }).to all(eq({ 'id' => toyota.id, 'name' => toyota.name }))
       end
 
       it 'returns only Honda cars' do
         get :index, params: { user_id: user.id, query: 'hon' }
 
-        json_response = JSON.parse(response.body)
-        expect(json_response['cars'].size).to eq(2)
-        expect(json_response['cars'].map { |c| c['brand'] }).to all(eq('Honda'))
+        cars = JSON.parse(response.body)
+        expect(cars.size).to eq(2)
+        expect(cars.map { |c| c['brand'] }).to all(eq({ 'id' => honda.id, 'name' => honda.name }))
       end
     end
 
@@ -110,8 +118,7 @@ RSpec.describe Api::V1::CarsController, type: :controller do
           price_max: 35_000
         }
 
-        json_response = JSON.parse(response.body)
-        cars = json_response['cars']
+        cars = JSON.parse(response.body)
 
         expect(cars.size).to eq(2)
         expect(cars.map { |c| c['price'] }).to all(be_between(20_000, 35_000))
@@ -126,19 +133,15 @@ RSpec.describe Api::V1::CarsController, type: :controller do
       it 'returns first page' do
         get :index, params: { user_id: user.id, page: 1 }
 
-        json_response = JSON.parse(response.body)
-        expect(json_response['cars'].size).to eq(2)
-        expect(json_response['total_count']).to eq(4)
-        expect(json_response['page']).to eq(1)
+        cars = JSON.parse(response.body)
+        expect(cars.size).to eq(2)
       end
 
       it 'returns second page' do
         get :index, params: { user_id: user.id, page: 2 }
 
-        json_response = JSON.parse(response.body)
-        expect(json_response['cars'].size).to eq(2)
-        expect(json_response['total_count']).to eq(4)
-        expect(json_response['page']).to eq(2)
+        cars = JSON.parse(response.body)
+        expect(cars.size).to eq(2)
       end
     end
   end
