@@ -12,15 +12,15 @@ RSpec.describe "Cars API Integration", type: :request do
 
   let(:rank_scores) do
     {
-      perfect_match.id.to_s => 0.95,
-      good_match.id.to_s => 0.75,
-      high_rank_no_match.id.to_s => 0.85
+      perfect_match.id => 0.95,
+      good_match.id => 0.75,
+      high_rank_no_match.id => 0.85
     }
   end
 
   before do
     allow(ExternalRecommendationService).to receive(:fetch_recommendations)
-      .with(user.id.to_s)
+      .with(user.id)
       .and_return(rank_scores.map { |id, score| { "car_id" => id, "rank_score" => score } })
   end
 
@@ -29,32 +29,32 @@ RSpec.describe "Cars API Integration", type: :request do
       get "/api/v1/cars", params: { user_id: user.id }
 
       expect(response).to have_http_status(:success)
-      json = JSON.parse(response.body)
+      cars = JSON.parse(response.body)
 
-      expect(json).to include('cars', 'total_count', 'page')
-
-      cars = json['cars']
       expect(cars.size).to eq(3)
 
       expect(cars[0]).to include(
-        'brand' => 'Toyota',
+        'brand' => { 'id' => toyota.id, 'name' => toyota.name },
         'model' => 'Camry',
         'price' => 25_000,
-        'label' => 'perfect_match'
+        'label' => 'perfect_match',
+        'rank_score' => 0.95
       )
 
       expect(cars[1]).to include(
-        'brand' => 'Toyota',
+        'brand' => { 'id' => toyota.id, 'name' => toyota.name },
         'model' => 'Land Cruiser',
         'price' => 80_000,
-        'label' => 'good_match'
+        'label' => 'good_match',
+        'rank_score' => 0.75
       )
 
       expect(cars[2]).to include(
-        'brand' => 'Honda',
+        'brand' => { 'id' => honda.id, 'name' => honda.name },
         'model' => 'CR-V',
         'price' => 35_000,
-        'label' => nil
+        'label' => nil,
+        'rank_score' => 0.85
       )
     end
 
@@ -76,11 +76,11 @@ RSpec.describe "Cars API Integration", type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      json = JSON.parse(response.body)
+      cars = JSON.parse(response.body)
 
-      expect(json['cars'].size).to eq(1)
-      expect(json['cars'].first).to include(
-        'brand' => 'Toyota',
+      expect(cars.size).to eq(1)
+      expect(cars.first).to include(
+        'brand' => { 'id' => toyota.id, 'name' => toyota.name },
         'model' => 'Camry',
         'price' => 25_000
       )
