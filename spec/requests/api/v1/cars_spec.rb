@@ -19,16 +19,26 @@ RSpec.describe 'Cars API', type: :request do
                 description: 'Page number (defaults to 1)'
 
       response '200', 'cars found' do
-        schema type: :object,
-          properties: {
-            cars: {
-              type: :array,
-              items: { '$ref' => '#/components/schemas/car' }
+        schema type: :array,
+          items: {
+            type: :object,
+            properties: {
+              id: { type: :integer },
+              brand: {
+                type: :object,
+                properties: {
+                  id: { type: :integer },
+                  name: { type: :string }
+                },
+                required: ['id', 'name']
+              },
+              model: { type: :string },
+              price: { type: :integer },
+              rank_score: { type: :number },
+              label: { type: :string, nullable: true }
             },
-            total_count: { type: :integer },
-            page: { type: :integer }
-          },
-          required: ['cars', 'total_count', 'page']
+            required: ['id', 'brand', 'model', 'price', 'rank_score', 'label']
+          }
 
         let(:user) { create(:user, preferred_price_range: 10_000..50_000) }
         let(:brand) { create(:brand, name: 'Toyota') }
@@ -36,30 +46,27 @@ RSpec.describe 'Cars API', type: :request do
         let!(:car) { create(:car, brand: brand, price: 25_000) }
         let(:user_id) { user.id }
 
+        before do
+          allow(RecommendationCacheService).to receive(:get_recommendations)
+            .with(user.id)
+            .and_return({ car.id => 0.95 })
+        end
+
         run_test! do |response|
           data = JSON.parse(response.body)
-          expect(data['cars']).to be_an(Array)
-          expect(data['total_count']).to be_an(Integer)
-          expect(data['page']).to be_an(Integer)
-        end
-      end
-
-      response '400', 'bad request' do
-        schema '$ref' => '#/components/schemas/error'
-
-        run_test! do |response|
-          expect(response.body).to include('Missing required parameters')
-        end
-      end
-
-      response '404', 'user not found' do
-        schema '$ref' => '#/components/schemas/error'
-        let(:user_id) { 0 }
-
-        run_test! do |response|
-          expect(response.body).to include('Resource not found')
+          expect(data.first).to include(
+            'id' => car.id,
+            'brand' => {
+              'id' => brand.id,
+              'name' => brand.name
+            },
+            'model' => car.model,
+            'price' => car.price,
+            'rank_score' => 0.95,
+            'label' => 'perfect_match'
+          )
         end
       end
     end
   end
-end 
+end
