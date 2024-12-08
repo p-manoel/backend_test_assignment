@@ -12,9 +12,9 @@ RSpec.describe CarQueryService do
 
   let(:rank_scores) do
     {
-      perfect_match_car.id.to_s => 0.8,
-      good_match_car.id.to_s => 0.6,
-      no_match_car.id.to_s => 0.4
+      perfect_match_car.id => 0.8,
+      good_match_car.id => 0.6,
+      no_match_car.id => 0.4
     }
   end
 
@@ -30,7 +30,43 @@ RSpec.describe CarQueryService do
 
       it 'returns cars sorted by label priority and rank score' do
         result = service.call
-        expect(result[:cars]).to eq([perfect_match_car, good_match_car, no_match_car])
+        expect(result).to eq(
+          [
+            {
+              id: perfect_match_car.id,
+              brand: {
+                id: perfect_match_car.brand.id,
+                name: perfect_match_car.brand.name
+              },
+              model: perfect_match_car.model,
+              price: perfect_match_car.price,
+              rank_score: 0.8,
+              label: 'perfect_match'
+            },
+            {
+              id: good_match_car.id,
+              brand: {
+                id: good_match_car.brand.id,
+                name: good_match_car.brand.name
+              },
+              model: good_match_car.model,
+              price: good_match_car.price,
+              rank_score: 0.6,
+              label: 'good_match'
+            },
+            {
+              id: no_match_car.id,
+              brand: {
+                id: no_match_car.brand.id,
+                name: no_match_car.brand.name
+              },
+              model: no_match_car.model,
+              price: no_match_car.price,
+              rank_score: 0.4,
+              label: nil
+            }
+          ]
+        )
       end
     end
 
@@ -39,7 +75,32 @@ RSpec.describe CarQueryService do
 
       it 'returns only matching brand cars' do
         result = service.call
-        expect(result[:cars]).to eq([perfect_match_car, good_match_car])
+        expect(result).to eq(
+          [
+            {
+              id: perfect_match_car.id,
+              brand: {
+                id: perfect_match_car.brand.id,
+                name: perfect_match_car.brand.name
+              },
+              model: perfect_match_car.model,
+              price: perfect_match_car.price,
+              rank_score: 0.8,
+              label: 'perfect_match'
+            },
+            {
+              id: good_match_car.id,
+              brand: {
+                id: good_match_car.brand.id,
+                name: good_match_car.brand.name
+              },
+              model: good_match_car.model,
+              price: good_match_car.price,
+              rank_score: 0.6,
+              label: 'good_match'
+            }
+          ]
+        )
       end
     end
 
@@ -48,7 +109,21 @@ RSpec.describe CarQueryService do
 
       it 'returns only cars within price range' do
         result = service.call
-        expect(result[:cars]).to eq([perfect_match_car])
+        expect(result).to eq(
+          [
+            {
+              id: perfect_match_car.id,
+              brand: {
+                id: perfect_match_car.brand.id,
+                name: perfect_match_car.brand.name
+              },
+              model: perfect_match_car.model,
+              price: perfect_match_car.price,
+              rank_score: 0.8,
+              label: 'perfect_match'
+            }
+          ]
+        )
       end
     end
 
@@ -60,17 +135,52 @@ RSpec.describe CarQueryService do
       it 'returns first page' do
         service = described_class.new(user_id: user.id, page: 1)
         result = service.call
-        expect(result[:cars]).to eq([perfect_match_car, good_match_car])
-        expect(result[:page]).to eq(1)
-        expect(result[:total_count]).to eq(3)
+        expect(result).to eq(
+          [
+            {
+              id: perfect_match_car.id,
+              brand: {
+                id: perfect_match_car.brand.id,
+                name: perfect_match_car.brand.name
+              },
+              model: perfect_match_car.model,
+              price: perfect_match_car.price,
+              rank_score: 0.8,
+              label: 'perfect_match'
+            },
+            {
+              id: good_match_car.id,
+              brand: {
+                id: good_match_car.brand.id,
+                name: good_match_car.brand.name
+              },
+              model: good_match_car.model,
+              price: good_match_car.price,
+              rank_score: 0.6,
+              label: 'good_match'
+            }
+          ]
+        )
       end
 
       it 'returns second page' do
         service = described_class.new(user_id: user.id, page: 2)
         result = service.call
-        expect(result[:cars]).to eq([no_match_car])
-        expect(result[:page]).to eq(2)
-        expect(result[:total_count]).to eq(3)
+        expect(result).to eq(
+          [
+            {
+              id: no_match_car.id,
+              brand: {
+                id: no_match_car.brand.id,
+                name: no_match_car.brand.name
+              },
+              model: no_match_car.model,
+              price: no_match_car.price,
+              rank_score: 0.4,
+              label: nil
+            }
+          ]
+        )
       end
     end
 
@@ -79,8 +189,44 @@ RSpec.describe CarQueryService do
 
       it 'defaults to page 1' do
         result = service.call
-        expect(result[:page]).to eq(1)
+        expect(result).to eq(
+          [
+            {
+              id: perfect_match_car.id,
+              brand: {
+                id: perfect_match_car.brand.id,
+                name: perfect_match_car.brand.name
+              },
+              model: perfect_match_car.model,
+              price: perfect_match_car.price,
+              rank_score: 0.8,
+              label: 'perfect_match'
+            },
+            {
+              id: good_match_car.id,
+              brand: {
+                id: good_match_car.brand.id,
+                name: good_match_car.brand.name
+              },
+              model: good_match_car.model,
+              price: good_match_car.price,
+              rank_score: 0.6,
+              label: 'good_match'
+            },
+            {
+              id: no_match_car.id,
+              brand: {
+                id: no_match_car.brand.id,
+                name: no_match_car.brand.name
+              },
+              model: no_match_car.model,
+              price: no_match_car.price,
+              rank_score: 0.4,
+              label: nil
+            }
+          ]
+        )
       end
     end
   end
-end 
+end

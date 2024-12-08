@@ -7,16 +7,17 @@ class CarQueryService
     @price_min = price_min.presence&.to_i
     @price_max = price_max.presence&.to_i
     @page = [page.to_i, 1].max
-    @rank_scores = RecommendationCacheService.get_recommendations(user_id)
+    @recommendations = RecommendationCacheService.get_recommendations(@user.id)
   end
 
   def call
     cars = Car.includes(:brand)
     cars = filter_by_brand_name(cars)
     cars = filter_by_price_range(cars)
-
     sorted_cars = sort_cars(cars)
-    paginate(sorted_cars)
+
+    paginated_cars = paginate(sorted_cars)
+    format_response(paginated_cars)
   end
 
   private
@@ -36,7 +37,7 @@ class CarQueryService
     cars.sort_by do |car|
       [
         -label_priority(car),
-        -(@rank_scores[car.id.to_s] || 0),
+        -get_rank_score(car),
         car.price
       ]
     end
@@ -50,12 +51,28 @@ class CarQueryService
     end
   end
 
+  def get_rank_score(car)
+    @recommendations[car.id] || 0
+  end
+
   def paginate(cars)
     start_index = (@page - 1) * PER_PAGE
-    {
-      cars: cars[start_index, PER_PAGE] || [],
-      total_count: cars.size,
-      page: @page
-    }
+    cars[start_index, PER_PAGE] || []
   end
-end 
+
+  def format_response(cars)
+    cars.map do |car|
+      {
+        id: car.id,
+        brand: {
+          id: car.brand.id,
+          name: car.brand.name
+        },
+        model: car.model,
+        price: car.price,
+        rank_score: get_rank_score(car),
+        label: LabelService.determine_label(car, @user)
+      }
+    end
+  end
+end
