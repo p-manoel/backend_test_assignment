@@ -11,7 +11,7 @@ class CarQueryService
   end
 
   def call
-    cars = Car.includes(:brand)
+    cars = Car.joins(:brand).select('cars.*, brands.name as brand_name, brands.id as brand_id')
     cars = filter_by_brand_name(cars)
     cars = filter_by_price_range(cars)
     sorted_cars = sort_cars(cars)
@@ -24,35 +24,46 @@ class CarQueryService
 
   def filter_by_brand_name(cars)
     return cars if @query.blank?
-    cars.joins(:brand).where('brands.name ILIKE ?', "%#{@query}%")
+
+    cars.where('LOWER(brands.name) LIKE LOWER(?)', "%#{@query}%")
   end
 
   def filter_by_price_range(cars)
+    return cars.where(price: @price_min..@price_max) if @price_min && @price_max
+
     cars = cars.where('price >= ?', @price_min) if @price_min
     cars = cars.where('price <= ?', @price_max) if @price_max
     cars
   end
 
   def sort_cars(cars)
-    cars.sort_by do |car|
-      [
-        -label_priority(car),
-        -get_rank_score(car),
-        car.price
-      ]
-    end
+    # Cache user preferences to avoid repeated lookups
+    preferred_brand_ids = @user.preferred_brands.pluck(:id)
+    price_range = @user.preferred_price_range
+
+    cars
+      .select("
+        cars.*,
+        brands.name as brand_name,
+        brands.id as brand_id,
+        CASE
+          WHEN brands.id = ANY(ARRAY[#{preferred_brand_ids.join(',')}])
+           AND cars.price BETWEEN #{price_range.begin} AND #{price_range.end}
+          THEN 2
+          WHEN brands.id = ANY(ARRAY[#{preferred_brand_ids.join(',')}])
+          THEN 1
+          ELSE 0
+        END as label_priority,
+        #{rank_score_sql} as rank_score
+      ")
+      .joins(:brand)  # Use Active Record association instead of raw LEFT JOIN
+      .order('label_priority DESC, rank_score DESC, price ASC')
   end
 
-  def label_priority(car)
-    case LabelService.determine_label(car, @user)
-    when 'perfect_match' then 2
-    when 'good_match'   then 1
-    else                     0
-    end
-  end
+  def rank_score_sql
+    scores = @recommendations.map { |id, score| "(CASE WHEN cars.id = #{id} THEN #{score} ELSE 0 END)" }
 
-  def get_rank_score(car)
-    @recommendations[car.id] || 0
+    scores.any? ? "GREATEST(#{scores.join(', ')})" : '0'
   end
 
   def paginate(cars)
@@ -61,16 +72,19 @@ class CarQueryService
   end
 
   def format_response(cars)
+    car_ids = cars.map(&:id)
+    recommendations = @recommendations.slice(*car_ids)
+
     cars.map do |car|
       {
         id: car.id,
         brand: {
-          id: car.brand.id,
-          name: car.brand.name
+          id: car.brand_id,
+          name: car.brand_name
         },
         model: car.model,
         price: car.price,
-        rank_score: get_rank_score(car),
+        rank_score: recommendations[car.id] || 0,
         label: LabelService.determine_label(car, @user)
       }
     end
