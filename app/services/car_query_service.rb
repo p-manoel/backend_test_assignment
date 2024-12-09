@@ -37,7 +37,6 @@ class CarQueryService
   end
 
   def sort_cars(cars)
-    # Cache user preferences to avoid repeated lookups
     preferred_brand_ids = @user.preferred_brands.pluck(:id)
     price_range = @user.preferred_price_range
 
@@ -56,7 +55,7 @@ class CarQueryService
         END as label_priority,
         #{rank_score_sql} as rank_score
       ")
-      .joins(:brand)  # Use Active Record association instead of raw LEFT JOIN
+      .joins(:brand)
       .order('label_priority DESC, rank_score DESC, price ASC')
   end
 
