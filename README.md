@@ -14,6 +14,8 @@ This API endpoint delivers personalized car recommendations by:
 
 ### Architecture
 
+![image](https://github.com/user-attachments/assets/90cc3de5-ee9a-4f8a-938d-6d6f32f8d3fe)
+
 The application follows a service-oriented architecture with:
 
 1. Controllers (API/V1)
