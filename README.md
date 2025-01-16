@@ -1,14 +1,22 @@
 # Car Recommendation API
 
-A Ruby on Rails API that provides car recommendations based on user preferences and external ranking scores.
+A Ruby on Rails API that provides car recommendations based on user preferences and external AI-powered ranking scores. Designed to handle millions of records with optimized database performance.
 
 ## Overview
 
 This API endpoint delivers personalized car recommendations by:
 - Matching cars with user's preferred brands and price ranges
-- Incorporating external recommendation scores
-- Sorting results by match quality and price
+- Integrating AI-powered recommendation scores
+- Implementing efficient database queries and caching strategies
+- Sorting results by match quality, AI rank, and price
 - Supporting pagination and filtering options
+- Handling service resilience and data staleness
+
+The system is built to:
+- Scale efficiently with millions of database records
+- Process complex filtering and sorting operations
+- Handle external service interruptions gracefully
+- Maintain responsive performance under load
 
 ## Technical Details
 
@@ -285,4 +293,61 @@ Note: The seeded user (id: 1) has:
 - Email: example@mail.com
 
 Rank scores are cached recommendations from an external service and range from 0 to 1, where higher scores indicate stronger recommendations.
+
+## AI-Powered Recommendations
+
+The application integrates with an external AI recommendation service that provides personalized car suggestions. This service:
+
+### Features
+- Uses modern AI algorithms to rank cars based on user preferences
+- Provides daily-updated recommendations for each user
+- Returns rank scores between 0 and 1 (higher scores indicate stronger recommendations)
+- Delivers the top 10 most relevant cars per user
+
+### Integration Details
+- Endpoint: `https://bravado-images-production.s3.amazonaws.com/recomended_cars.json?user_id=<USER_ID>`
+- Response format:
+```json
+[
+  {
+    "car_id": 179,
+    "rank_score": 0.945
+  }
+]
+```
+
+### Resilience Considerations
+The application is designed to handle:
+- Service unavailability
+- API errors
+- Stale data (updated once per day)
+- Missing recommendations
+
+### Caching Strategy
+To optimize performance and handle service limitations:
+- Recommendations are cached daily
+- Fallback to database-only sorting when AI service is unavailable
+- Efficient merging of AI recommendations with database queries
+- Background job updates for recommendation data
+
+### Integration with Core Features
+The AI recommendations influence the car listing by:
+1. Contributing to the sorting algorithm (after label matching)
+2. Providing personalized rank scores in the API response
+3. Complementing user's explicit preferences (brands and price range)
+
+Example of how recommendations affect results:
+```json
+{
+  "id": 179,
+  "brand": {
+    "id": 39,
+    "name": "Volkswagen"
+  },
+  "model": "Derby",
+  "price": 37230,
+  "rank_score": 0.945,    // AI-provided score
+  "label": "perfect_match" // Based on user preferences
+}
+```
 
