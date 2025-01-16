@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+
+# Create scripts directory and common-functions if they don't exist
+mkdir -p scripts
+
+if [ ! -f scripts/common-functions ]; then
+  cat > scripts/common-functions << 'EOF'
+check_required_commands() {
+  for cmd in "$@"; do
+    if ! command -v $cmd >/dev/null 2>&1; then
+      echo "Error: $cmd is required but not installed."
+      exit 1
+    fi
+  done
+}
+
+# Colors
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+white='\033[1;37m'
+nc='\033[0m'
+
+red_text() { echo -e "${red}$1${nc}"; }
+green_text() { echo -e "${green}$1${nc}"; }
+blue_text() { echo -e "${yellow}$1${nc}"; }
+EOF
+fi
+
+. ./scripts/common-functions
+
+check_required_commands docker
+
+# Function to run commands in container
+run() {
+  local env=${RAILS_ENV:-development}
+  docker exec -it -e RAILS_ENV=$env car-market-web $@
+}
+
+# Function to build the application
+build() {
+  if [ -f Dockerfile ]; then
+    docker stop car-market-web car-market-db 2>/dev/null || true
+    docker rm car-market-web car-market-db 2>/dev/null || true
+    docker network create car-market-network 2>/dev/null || true
+    docker buildx build -t car-market-app .
+  else
+    red_text 'Could not find Dockerfile'
+    return 1
+  fi
+}
+
+case $1 in
+  start)
+    # Start PostgreSQL
+    docker run -d \
+      --name car-market-db \
+      --network car-market-network \
+      --network-alias db \
+      -e POSTGRES_PASSWORD=password \
+      -v car-market-postgres-data:/var/lib/postgresql/data \
+      postgres:13
+
+    # Start Rails app
+    docker run -d \
+      --name car-market-web \
+      --network car-market-network \
+      -e DATABASE_URL="postgres://postgres:password@db:5432/car_market_development" \
+      -e TEST_DATABASE_URL="postgres://postgres:password@db:5432/car_market_test" \
+      -e RAILS_ENV=development \
+      -p 3000:3000 \
+      -v $(pwd):/app \
+      car-market-app
+    ;;
+  stop)
+    docker stop car-market-web car-market-db
+    ;;
+  clean)
+    docker stop car-market-web car-market-db 2>/dev/null || true
+    docker rm car-market-web car-market-db 2>/dev/null || true
+    docker network rm car-market-network 2>/dev/null || true
+    ;;
+  build)
+    build
+    ;;
+  sh)
+    run bash
+    ;;
+  console)
+    run rails c
+    ;;
+  rspec)
+    # Setup test database if it doesn't exist
+    RAILS_ENV=test run rails db:create 2>/dev/null || true
+    RAILS_ENV=test run rails db:migrate
+    
+    # Run the specs
+    RAILS_ENV=test run bundle exec rspec ${@:2}
+    ;;
+  rubocop)
+    run bundle exec rubocop --parallel ${@:2}
+    ;;
+  rubocoped)
+    run bundle exec rubocop -a ${@:2}
+    ;;
+  run)
+    run ${@:2}
+    ;;
+  db:setup)
+    run rails db:create db:migrate db:seed
+    ;;
+  db:migrate)
+    echo 'Migrating the development database'
+    run rails db:migrate
+    echo 'Migrating the test database'
+    docker exec -it -e RAILS_ENV=test car-market-web rails db:migrate
+    ;;
+  db:reset)
+    run rails db:drop db:create db:migrate db:seed
+    ;;
+  logs)
+    docker logs -f car-market-web
+    ;;
+  *)
+    blue_text 'Car Market Development Environment Script'
+    echo
+    echo 'Usage: ./car-market <option> <arguments>'
+    echo 'Examples:'
+    echo './car-market rspec spec/models'
+    echo './car-market run bundle exec rake -T'
+    echo
+    echo 'Available options:'
+    echo "${yellow} start:${white} starts the application and its dependencies"
+    echo "${yellow} stop:${white} stops all containers"
+    echo "${yellow} clean:${white} stops and removes all containers and network"
+    echo "${yellow} build:${white} builds new app image"
+    echo "${yellow} sh:${white} opens a shell session in the app container"
+    echo "${yellow} console:${white} opens Rails console"
+    echo "${yellow} rspec:${white} runs RSpec tests"
+    echo "${yellow} rubocop:${white} runs Rubocop linter"
+    echo "${yellow} rubocoped:${white} runs Rubocop with auto-fix"
+    echo "${yellow} run:${white} runs arbitrary commands in the container"
+    echo "${yellow} db:setup:${white} sets up the database (create, migrate, seed)"
+    echo "${yellow} db:migrate:${white} runs pending migrations"
+    echo "${yellow} db:reset:${white} resets the database"
+    echo "${yellow} logs:${white} shows container logs"
+    ;;
+esac

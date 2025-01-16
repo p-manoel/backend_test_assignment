@@ -33,75 +33,57 @@ The application follows a service-oriented architecture with:
    - Brand: Brand information
    - User: User preferences and settings
 
-### Key Features
-
-1. Smart Sorting Algorithm
-   - Perfect matches (preferred brand + price range)
-   - Good matches (preferred brand only)
-   - Recommendation scores
-   - Price ordering
-
-2. Performance Optimizations
-   - Database-level sorting and filtering
-   - Eager loading of associations
-   - Pagination support
-   - SQL query optimization
-
-3. Filtering Options
-   - Brand name search
-   - Price range filters
-   - Pagination controls
-
-## API Documentation
-
-### GET /api/v1/cars
-
-Parameters:
-- user_id (required): ID of the user for preferences
-- query (optional): Filter by brand name
-- price_min (optional): Minimum price filter
-- price_max (optional): Maximum price filter
-- page (optional): Page number for pagination
-
-Response Format:
-
-```json
-[
-  {
-    "id": 1,
-    "brand": {
-    "id": 1,
-    "name": "Toyota"
-    },
-    "model": "Camry",
-    "price": 25000,
-    "rank_score": 0.95,
-    "label": "perfect_match"
-  }
-]
-```
-
-## Testing
-
-The application includes comprehensive test coverage:
-- Request specs for API endpoints
-- Service unit tests
-- Model specs for business logic
-- Integration tests for full functionality
-
 ## Setup
 
+### Using Docker (Recommended)
+
 1. Clone the repository
-2. Install dependencies:
+
+2. Build the application:
+   ```bash
+   ./car-market build
    ```
+
+3. Start the application:
+   ```bash
+   ./car-market start
+   ```
+
+4. Setup the database:
+   ```bash
+   ./car-market db:setup
+   ```
+
+5. Run the test suite:
+   ```bash
+   ./car-market rspec
+   ```
+
+Available commands:
+```bash
+./car-market start      # Start the application
+./car-market stop       # Stop all containers
+./car-market clean      # Remove all containers and networks
+./car-market console    # Access Rails console
+./car-market rspec      # Run tests
+./car-market db:migrate # Run database migrations
+./car-market logs       # View application logs
+```
+
+### Manual Setup (Alternative)
+
+1. Install dependencies:
+   ```bash
    bundle install
    ```
-3. Setup database:
-   ```
+
+2. Setup database:
+   ```bash
    rails db:create db:migrate
    ```
-4. Run the test suite:
-   ```
+
+3. Run the test suite:
+   ```bash
    rspec
    ```
 
@@ -129,23 +111,75 @@ The application includes comprehensive test coverage:
 - Spring (Development Server)
 - Listen (~> 3.3)
 
-### Testing Only
-- WebMock (HTTP Request Stubbing)
+### Infrastructure
+- Docker
+- PostgreSQL 13 (Container)
+- Docker Network for Service Communication
+
+## API Documentation
+
+### GET /api/v1/cars
+
+Parameters:
+- user_id (required): ID of the user for preferences
+- query (optional): Filter by brand name
+- price_min (optional): Minimum price filter
+- price_max (optional): Maximum price filter
+- page (optional): Page number for pagination
+
+Response Format:
+```json
+[
+  {
+    "id": 1,
+    "brand": {
+      "id": 1,
+      "name": "Toyota"
+    },
+    "model": "Camry",
+    "price": 25000,
+    "rank_score": 0.95,
+    "label": "perfect_match"
+  }
+]
+```
 
 ## Design Decisions
 
-1. Service Objects
+1. Containerization
+   - Docker-based development environment
+   - Consistent environment across team members
+   - Easy setup and deployment
+   - Isolated dependencies
+
+2. Service Objects
    - Separates business logic from controllers
    - Improves maintainability and testing
    - Allows for easy modification of sorting/filtering logic
 
-2. Database Optimization
+3. Database Optimization
    - Uses SQL for efficient sorting
    - Implements proper indexing
    - Minimizes memory usage
 
-3. Code Organization
+4. Code Organization
    - Clear separation of concerns
    - Modular design
    - Easy to extend and modify
+
+## Architecture Notes
+
+### Container Structure
+- Web Application (Ruby 2.7.2)
+- PostgreSQL 13
+- Custom networking for service communication
+- Volume mapping for persistent data
+- Environment-specific configurations
+
+### Development Workflow
+1. Build containers using `./car-market build`
+2. Start services with `./car-market start`
+3. Run tests via `./car-market rspec`
+4. Access logs through `./car-market logs`
+5. Clean up using `./car-market clean`
 

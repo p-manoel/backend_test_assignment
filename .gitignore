@@ -25,3 +25,7 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+# Ignore docker files
+.docker-sync
+docker-compose.override.yml
