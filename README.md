@@ -167,6 +167,47 @@ Response Format:
    - Modular design
    - Easy to extend and modify
 
+## Performance Considerations
+
+This application was designed to simulate a system handling millions of database records, with a focus on database performance and scalability. Key optimizations include:
+
+### Database Design
+- Efficient indexing on frequently queried columns
+- Optimized join operations between cars and brands
+- Proper use of foreign keys for referential integrity
+- Strategic use of database constraints
+
+### Query Optimization
+- Uses SQL-level filtering instead of Ruby-level filtering
+- Implements database-side pagination
+- Minimizes memory usage through lazy loading
+- Leverages PostgreSQL's built-in full-text search capabilities
+
+### Caching Strategy
+- External recommendation scores are cached
+- Brand-related queries are optimized
+- Proper use of connection pooling
+- Query result caching where appropriate
+
+### Performance Testing
+The application includes performance specs that simulate:
+- Large datasets (millions of car records)
+- Multiple concurrent users
+- Complex filtering and sorting operations
+- Heavy read operations with occasional writes
+
+### Monitoring and Debugging
+- SQL query logging for development
+- Database performance metrics tracking
+- Query execution plan analysis
+- Memory usage monitoring
+
+These optimizations ensure the application remains responsive and efficient even with:
+- Large number of records
+- Complex filtering operations
+- Multiple concurrent users
+- Frequent API requests
+
 ## Architecture Notes
 
 ### Container Structure
