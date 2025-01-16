@@ -152,6 +152,63 @@ Response Format:
 ]
 ```
 
+## AI-Powered Recommendations
+
+The application integrates with an external AI recommendation service that provides personalized car suggestions. This service:
+
+### Features
+- Uses modern AI algorithms to rank cars based on user preferences
+- Provides daily-updated recommendations for each user
+- Returns rank scores between 0 and 1 (higher scores indicate stronger recommendations)
+- Delivers the top 10 most relevant cars per user
+
+### Integration Details
+- Endpoint: `https://bravado-images-production.s3.amazonaws.com/recomended_cars.json?user_id=<USER_ID>`
+- Response format:
+```json
+[
+  {
+    "car_id": 179,
+    "rank_score": 0.945
+  }
+]
+```
+
+### Resilience Considerations
+The application is designed to handle:
+- Service unavailability
+- API errors
+- Stale data (updated once per day)
+- Missing recommendations
+
+### Caching Strategy
+To optimize performance and handle service limitations:
+- Recommendations are cached daily
+- Fallback to database-only sorting when AI service is unavailable
+- Efficient merging of AI recommendations with database queries
+- Background job updates for recommendation data
+
+### Integration with Core Features
+The AI recommendations influence the car listing by:
+1. Contributing to the sorting algorithm (after label matching)
+2. Providing personalized rank scores in the API response
+3. Complementing user's explicit preferences (brands and price range)
+
+Example of how recommendations affect results:
+```json
+{
+  "id": 179,
+  "brand": {
+    "id": 39,
+    "name": "Volkswagen"
+  },
+  "model": "Derby",
+  "price": 37230,
+  "rank_score": 0.945,    // AI-provided score
+  "label": "perfect_match" // Based on user preferences
+}
+```
+
 ## Design Decisions
 
 1. Containerization
@@ -293,61 +350,3 @@ Note: The seeded user (id: 1) has:
 - Email: example@mail.com
 
 Rank scores are cached recommendations from an external service and range from 0 to 1, where higher scores indicate stronger recommendations.
-
-## AI-Powered Recommendations
-
-The application integrates with an external AI recommendation service that provides personalized car suggestions. This service:
-
-### Features
-- Uses modern AI algorithms to rank cars based on user preferences
-- Provides daily-updated recommendations for each user
-- Returns rank scores between 0 and 1 (higher scores indicate stronger recommendations)
-- Delivers the top 10 most relevant cars per user
-
-### Integration Details
-- Endpoint: `https://bravado-images-production.s3.amazonaws.com/recomended_cars.json?user_id=<USER_ID>`
-- Response format:
-```json
-[
-  {
-    "car_id": 179,
-    "rank_score": 0.945
-  }
-]
-```
-
-### Resilience Considerations
-The application is designed to handle:
-- Service unavailability
-- API errors
-- Stale data (updated once per day)
-- Missing recommendations
-
-### Caching Strategy
-To optimize performance and handle service limitations:
-- Recommendations are cached daily
-- Fallback to database-only sorting when AI service is unavailable
-- Efficient merging of AI recommendations with database queries
-- Background job updates for recommendation data
-
-### Integration with Core Features
-The AI recommendations influence the car listing by:
-1. Contributing to the sorting algorithm (after label matching)
-2. Providing personalized rank scores in the API response
-3. Complementing user's explicit preferences (brands and price range)
-
-Example of how recommendations affect results:
-```json
-{
-  "id": 179,
-  "brand": {
-    "id": 39,
-    "name": "Volkswagen"
-  },
-  "model": "Derby",
-  "price": 37230,
-  "rank_score": 0.945,    // AI-provided score
-  "label": "perfect_match" // Based on user preferences
-}
-```
-
