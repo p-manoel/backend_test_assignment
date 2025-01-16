@@ -183,3 +183,65 @@ Response Format:
 4. Access logs through `./car-market logs`
 5. Clean up using `./car-market clean`
 
+## API Usage Examples
+
+After setting up the application and running the seeds (`./car-market db:setup`), you can interact with the API using the following examples:
+
+### Basic Query
+Get car recommendations for the seeded user:
+```bash
+curl "http://localhost:3000/api/v1/cars?user_id=1"
+```
+
+### Filter by Brand
+Search for Volkswagen cars:
+```bash
+curl "http://localhost:3000/api/v1/cars?user_id=1&query=volkswagen"
+```
+
+### Filter by Price Range
+Find cars between 30,000 and 45,000:
+```bash
+curl "http://localhost:3000/api/v1/cars?user_id=1&price_min=30000&price_max=45000"
+```
+
+### Pagination
+View the second page of results:
+```bash
+curl "http://localhost:3000/api/v1/cars?user_id=1&page=2"
+```
+
+### Combined Filters
+Search for Alfa Romeo cars under 40,000:
+```bash
+curl "http://localhost:3000/api/v1/cars?user_id=1&query=alfa&price_max=40000"
+```
+
+### Response Explanation
+The API returns cars with the following information:
+```json
+{
+  "id": 1,
+  "brand": {
+    "id": 1,
+    "name": "Alfa Romeo"
+  },
+  "model": "Giulia",
+  "price": 38000,
+  "rank_score": 0.95,
+  "label": "perfect_match"
+}
+```
+
+Labels:
+- `perfect_match`: Car matches both preferred brand and price range
+- `good_match`: Car matches preferred brand only
+- `null`: No specific match
+
+Note: The seeded user (id: 1) has:
+- Preferred brands: Alfa Romeo, Volkswagen
+- Preferred price range: 35,000-40,000
+- Email: example@mail.com
+
+Rank scores are cached recommendations from an external service and range from 0 to 1, where higher scores indicate stronger recommendations.
+
